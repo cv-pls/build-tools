@@ -92,7 +92,7 @@ class ChromeUpdateManifest
      */
     public function getCrxUrl()
     {
-      return $this->crxUrl;
+        return $this->crxUrl;
     }
 
     /**
@@ -112,7 +112,7 @@ class ChromeUpdateManifest
      */
     public function getVersion()
     {
-      return $this->version;
+        return $this->version;
     }
 
     /**
@@ -122,7 +122,7 @@ class ChromeUpdateManifest
      */
     public function setVersion($version)
     {
-      $this->version = $version;
+        $this->version = $version;
     }
 
     /**

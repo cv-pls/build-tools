@@ -25,7 +25,7 @@ abstract class Package extends \ZipArchive
     /**
      * @var string Temporary directory path
      */
-    private $tmpDir;
+    private $tempDirectory;
 
     /**
      * @var bool Whether the file is open
@@ -40,7 +40,7 @@ abstract class Package extends \ZipArchive
     /**
      * @var bool Path to the output file
      */
-    private $outFile;
+    private $outputFile;
 
     /**
      * Check if a path can be written to by checking if the deepest existing path is writable
@@ -67,18 +67,19 @@ abstract class Package extends \ZipArchive
      * Close and delete the temporary file and return the data as a string
      *
      * @return string The file data
+     *
+     * @throws \LogicException When the file is not open
      */
     protected function closeAndDestroyTempFile()
     {
-        $data = null;
-
-        if ($this->isOpen) {
-            $this->isOpen = false;
-
-            parent::close();
-            $data = file_get_contents($this->tmpFile);
-            unlink($this->tmpFile);
+        if (!$this->isOpen) {
+            throw new \LogicException('Cannot close temp file, not open');
         }
+        $this->isOpen = false;
+
+        parent::close();
+        $data = file_get_contents($this->tmpFile);
+        unlink($this->tmpFile);
 
         return $data;
     }
@@ -92,7 +93,7 @@ abstract class Package extends \ZipArchive
      */
     protected function writeOutputFile($data)
     {
-        if (!file_put_contents($this->outFile, $data)) {
+        if (!file_put_contents($this->outputFile, $data)) {
             throw new \RuntimeException('Unable to write output file');
         }
     }
@@ -101,19 +102,19 @@ abstract class Package extends \ZipArchive
      * Constructor
      *
      * @param \CvPls\Build\DataSigner $dataSigner The DataSigner object
-     * @param string                  $tmpDir     Custom temporary directory path
+     * @param string                  $tempDirectory     Custom temporary directory path
      */
-    public function __construct($tmpDir = NULL)
+    public function __construct($tempDirectory = NULL)
     {
-        if ($tmpDir === NULL) {
-            $tmpDir = sys_get_temp_dir();
+        if ($tempDirectory === NULL) {
+            $tempDirectory = sys_get_temp_dir();
         }
 
-        $this->setTmpDir($tmpDir);
+        $this->settempDirectory($tempDirectory);
     }
 
     /**
-     * Destructor
+     * Destructor calls close() if not already called
      */
     public function __destruct()
     {
@@ -127,19 +128,39 @@ abstract class Package extends \ZipArchive
      *
      * @return string The path of the temporary directory in use
      */
-    public function getTmpDir()
+    public function getTempDirectory()
     {
-      return $this->tmpDir;
+        return $this->tempDirectory;
     }
 
     /**
      * Set the path of the temporary directory in use
      *
-     * @param string $tmpDir The new path to use
+     * @param string $tempDirectory The temporary directory new path to use
      */
-    public function setTmpDir($tmpDir)
+    public function setTempDirectory($tempDirectory)
     {
-      $this->tmpDir = $tmpDir;
+        $this->tempDirectory = $tempDirectory;
+    }
+
+    /**
+     * Get the path of the output file in use
+     *
+     * @return string The path of the output file in use
+     */
+    public function getOutputFile()
+    {
+        return $this->outputFile;
+    }
+
+    /**
+     * Set the path of the output file in use
+     *
+     * @param string $outputFile The new output file path to use
+     */
+    public function setOutputFile($outputFile)
+    {
+        $this->outputFile = $outputFile;
     }
 
     /**
@@ -150,15 +171,15 @@ abstract class Package extends \ZipArchive
      *
      * @throws \RuntimeException When adding an object to the archive fails
      */
-    public function addDir($dir, $localName = NULL)
+    public function addDir($dirPath, $localName = NULL)
     {
         if ($localName === NULL) {
-          $localName = basename($dir);
+          $localName = basename($dirPath);
         }
         if (!$this->addEmptyDir($localName)) {
-            throw new \RuntimeException('Error adding directory '.$dir.' to archive');
+            throw new \RuntimeException('Error adding directory '.$dirPath.' to archive');
         }
-        $this->addDirContents($dir, $localName);
+        $this->addDirContents($dirPath, $localName);
     }
 
     /**
@@ -169,11 +190,11 @@ abstract class Package extends \ZipArchive
      *
      * @throws \RuntimeException When adding an object to the archive fails
      */
-    public function addDirContents($dir, $localName = '')
+    public function addDirContents($dirPath, $localName = '')
     {
         $base = ltrim($localName.'/', '/');
 
-        foreach (glob("$dir/*") as $file) {
+        foreach (glob("$dirPath/*") as $file) {
             if (is_dir($file)) {
                 $this->addDir($file, $base.basename($file));
             } else {
@@ -187,16 +208,18 @@ abstract class Package extends \ZipArchive
     /**
      * Open the temporary file and store the output file path
      *
-     * @param string $fileName Output file path
-     * @param int    $flags    \ZipArchive open flags
+     * @param string $outputFile Output file path
+     * @param int    $flags      \ZipArchive open flags
      *
      * @throws \InvalidArgumentException When the output file path or the temp path is not writable
      */
-    public function open($fileName, $flags = \ZIPARCHIVE::CREATE)
+    public function open($outputFile = null, $flags = \ZIPARCHIVE::CREATE)
     {
-        $this->outFile = $fileName;
-        $this->tmpFile = $this->tmpDir.'/'.uniqid().'.zip';
+        if (isset($outputFile)) {
+            $this->setOutputFile($outputFile);
+        }
 
+        $this->tmpFile = $this->tempDirectory.'/'.uniqid().'.zip';
         if (is_file($this->tmpFile)) {
             unlink($this->tmpFile);
         }
@@ -216,6 +239,7 @@ abstract class Package extends \ZipArchive
     /**
      * Close the temporary file and transfer the data to the output file
      *
+     * @throws \LogicException   When the file is not open
      * @throws \RuntimeException When the output file cannot be written
      */
     public function close()

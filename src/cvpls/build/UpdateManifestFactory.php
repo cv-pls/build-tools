@@ -26,5 +26,5 @@ interface UpdateManifestFactory {
      *
      * @return \CvPls\Build\UpdateManifest The created instance
      */
-    public function create(DataSigner $dataSigner);
+    public function create(DataSigner $dataSigner, Package $package, $version, $url);
 }
