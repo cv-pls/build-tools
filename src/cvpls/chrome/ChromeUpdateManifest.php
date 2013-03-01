@@ -1,5 +1,4 @@
 <?php
-<?php
 /**
  * Update manifest builder for Chrome
  *
@@ -23,7 +22,7 @@ use \CvPls\Build\DataSigner;
  * @package  Chrome
  * @author   Chris Wright <info@daverandom.com>
  */
-class UpdateManifest
+class ChromeUpdateManifest
 {
     /**
      * @var string Namespace URL for manifest XML

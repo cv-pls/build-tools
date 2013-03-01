@@ -13,7 +13,7 @@
 
 namespace CvPls\Chrome;
 
-use \CvPls\Build\DataSigner;
+use \CvPls\Build\KeyPair;
 
 /**
  * Chrome extension ID generator class
@@ -37,19 +37,19 @@ class IdGenerator
     );
 
     /**
-     * @var \CvPls\Build\DataSigner Data signer object
+     * @var \CvPls\Build\KeyPair Data signer object
      */
-    private $dataSigner;
+    private $keyPair;
 
     /**
      * Constructor
      *
      * @param \CvPls\Build\DataSigner $dataSigner Data signer object
      */
-    public function __construct(DataSigner $dataSigner = NULL)
+    public function __construct(KeyPair $keyPair = NULL)
     {
-        if ($dataSigner !== NULL) {
-            $this->setDataSigner($dataSigner);
+        if ($keyPair !== NULL) {
+            $this->setKeyPair($keyPair);
         }
     }
 
@@ -58,9 +58,9 @@ class IdGenerator
      *
      * @return \CvPls\Build\DataSigner The internal DataSigner object
      */
-    public function getDataSigner()
+    public function getKeyPair()
     {
-        return $this->dataSigner;
+        return $this->keyPair;
     }
 
     /**
@@ -68,9 +68,9 @@ class IdGenerator
      *
      * @param \CvPls\Build\DataSigner $dataSigner The new DataSigner object
      */
-    public function setDataSigner(DataSigner $dataSigner)
+    public function setDataSigner(KeyPair $keyPair)
     {
-      $this->dataSigner = $dataSigner;
+      $this->keyPair = $keyPair;
     }
 
     /**
@@ -80,7 +80,7 @@ class IdGenerator
      */
     public function getAppId()
     {
-        $key = $this->dataSigner->getPublicKey(DataSigner::FORMAT_DER);
+        $key = $this->keyPair->getPublicKey(KeyPair::FORMAT_DER);
 
         $hash       = hash('sha256', $key, true);
         $first128   = substr($hash, 0, 16);

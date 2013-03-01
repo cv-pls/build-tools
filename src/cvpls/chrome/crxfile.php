@@ -15,6 +15,7 @@ namespace CvPls\Chrome;
 
 use \CvPls\Build\Package;
 use \CvPls\Build\DataSigner;
+use \CvPls\Build\KeyPair;
 
 /**
  * CRX package builder for Chrome extensions
@@ -25,6 +26,16 @@ use \CvPls\Build\DataSigner;
  */
 class CRXFile extends Package
 {
+    /**
+     * @var \CvPls\Build\DataSigner Object used for signing the package
+     */
+    private $dataSigner;
+
+    /**
+     * @var \CvPls\Build\KeyPair Underlying key pair used by the data signer
+     */
+    private $keyPair;
+
     /**
      * @var int The CRX version in use
      */
@@ -39,10 +50,10 @@ class CRXFile extends Package
      */
     private function makeCrxHeader($data)
     {
-        $publicKey = $this->dataSigner->getPublicKey(DataSigner::FORMAT_DER);
+        $publicKey = $this->keyPair->getPublicKey(KeyPair::FORMAT_DER);
         $signature = $this->dataSigner->signString($data);
 
-        $magicNumber = "Cr24";
+        $magicNumber = 'Cr24';
         $crxVersion  = pack('V', $this->crxVersion);
         $keyLength   = pack('V', strlen($publicKey));
         $sigLength   = pack('V', strlen($signature));
@@ -68,6 +79,27 @@ class CRXFile extends Package
     public function setCrxVersion($version)
     {
         $this->crxVersion = (int) $version;
+    }
+
+    /**
+     * Get the internal DataSigner object
+     *
+     * @return \CvPls\Build\DataSigner The internal DataSigner object
+     */
+    public function getDataSigner()
+    {
+        return $this->dataSigner;
+    }
+
+    /**
+     * Set the internal DataSigner object
+     *
+     * @param \CvPls\Build\DataSigner $dataSigner The new DataSigner object
+     */
+    public function setDataSigner(DataSigner $dataSigner)
+    {
+      $this->dataSigner = $dataSigner;
+      $this->keyPair = $dataSigner->getKeyPair();
     }
 
     /**

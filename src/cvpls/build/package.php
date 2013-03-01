@@ -23,11 +23,6 @@ namespace CvPls\Build;
 abstract class Package extends \ZipArchive
 {
     /**
-     * @var \CvPls\Build\DataSigner Object used for signing the package
-     */
-    protected $dataSigner;
-
-    /**
      * @var string Temporary directory path
      */
     private $tmpDir;
@@ -108,13 +103,12 @@ abstract class Package extends \ZipArchive
      * @param \CvPls\Build\DataSigner $dataSigner The DataSigner object
      * @param string                  $tmpDir     Custom temporary directory path
      */
-    public function __construct(DataSigner $dataSigner, $tmpDir = NULL)
+    public function __construct($tmpDir = NULL)
     {
-        $this->setDataSigner($dataSigner);
-
         if ($tmpDir === NULL) {
             $tmpDir = sys_get_temp_dir();
         }
+
         $this->setTmpDir($tmpDir);
     }
 
@@ -126,26 +120,6 @@ abstract class Package extends \ZipArchive
         if ($this->isOpen) {
             $this->close();
         }
-    }
-
-    /**
-     * Get the internal DataSigner object
-     *
-     * @return \CvPls\Build\DataSigner The internal DataSigner object
-     */
-    public function getDataSigner()
-    {
-        return $this->dataSigner;
-    }
-
-    /**
-     * Set the internal DataSigner object
-     *
-     * @param \CvPls\Build\DataSigner $dataSigner The new DataSigner object
-     */
-    public function setDataSigner(DataSigner $dataSigner)
-    {
-      $this->dataSigner = $dataSigner;
     }
 
     /**
