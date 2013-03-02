@@ -20,11 +20,17 @@ namespace CvPls\Build;
  * @package  Build
  * @author   Chris Wright <info@daverandom.com>
  */
-interface UpdateManifestFactory {
+interface UpdateManifestFactory
+{
     /**
      * Create a new update manifest instance
      *
+     * @param \CvPls\Build\DataSigner $dataSigner Data signer object
+     * @param \CvPls\Build\Package    $package    Package object
+     * @param string                  $version    Version of package binary
+     * @param string                  $packageUrl URL of package binary
+     *
      * @return \CvPls\Build\UpdateManifest The created instance
      */
-    public function create(DataSigner $dataSigner, Package $package, $version, $url);
+    public function create(DataSigner $dataSigner, Package $package, $version, $packageUrl);
 }

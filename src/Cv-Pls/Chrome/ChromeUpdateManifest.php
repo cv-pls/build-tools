@@ -13,16 +13,16 @@
 
 namespace CvPls\Chrome;
 
-use \CvPls\Build\DataSigner;
+use \CvPls\Build\UpdateManifest;
 
 /**
- * Chrome extension ID generator class
+ * Update manifest builder for Chrome
  *
  * @category [cv-pls]
  * @package  Chrome
  * @author   Chris Wright <info@daverandom.com>
  */
-class ChromeUpdateManifest
+class ChromeUpdateManifest extends UpdateManifest
 {
     /**
      * @var string Namespace URL for manifest XML
@@ -35,34 +35,25 @@ class ChromeUpdateManifest
     private $idGenerator;
 
     /**
-     * @var string URL of CRX package
-     */
-    private $crxUrl;
-
-    /**
-     * @var string Version of CRX package
-     */
-    private $version;
-
-    /**
      * @var \DOMDocument Manifest XML document
      */
-    protected $document;
+    private $document;
 
     /**
      * Constructor
      *
      * @param \CvPls\Chrome\IdGenerator $idGenerator Extension ID generator
-     * @param string                    $crxUrl      URL of CRX package
-     * @param string                    $version     Version of CRX package
+     * @param string                    $version     Version of package binary
+     * @param string                    $url         URL of package binary
      */
-    public function __construct(IdGenerator $idGenerator = NULL, $crxUrl = NULL, $version = NULL)
+    public function __construct(IdGenerator $idGenerator = null, $version = null, $packageUrl = null)
     {
         if ($idGenerator !== NULL) {
             $this->setIdGenerator($idGenerator);
         }
-        $this->setCrxUrl($crxUrl);
+
         $this->setVersion($version);
+        $this->setPackageUrl($packageUrl);
     }
 
     /**
@@ -86,46 +77,6 @@ class ChromeUpdateManifest
     }
 
     /**
-     * Get the URL of CRX package
-     *
-     * @return string URL of CRX package
-     */
-    public function getCrxUrl()
-    {
-        return $this->crxUrl;
-    }
-
-    /**
-     * Set the URL of CRX package
-     *
-     * @param string $crxUrl URL of CRX package
-     */
-    public function setCrxUrl($crxUrl)
-    {
-        $this->crxUrl = $crxUrl;
-    }
-
-    /**
-     * Get the version of CRX package
-     *
-     * @return string Version of CRX package
-     */
-    public function getVersion()
-    {
-        return $this->version;
-    }
-
-    /**
-     * Set the version of CRX package
-     *
-     * @param string $version Version of CRX package
-     */
-    public function setVersion($version)
-    {
-        $this->version = $version;
-    }
-
-    /**
      * Generate the update manifest document
      */
     public function generate()
@@ -143,7 +94,7 @@ class ChromeUpdateManifest
         $rootEl->appendChild($appEl);
 
         $updateCheckEl = $this->document->createElementNS($this->nsUrl, 'updatecheck');
-        $updateCheckEl->setAttribute('codebase', $this->crxUrl);
+        $updateCheckEl->setAttribute('codebase', $this->packageUrl);
         $updateCheckEl->setAttribute('version', $this->version);
         $appEl->appendChild($updateCheckEl);
     }
