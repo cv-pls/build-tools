@@ -39,6 +39,6 @@ class Logger implements Loggable
      */
     public function error($message)
     {
-        fwrite(STDERR, "ERROR: " . $message . "\n");
+        fwrite(STDERR, "\nERROR: " . $message . "\n");
     }
 }

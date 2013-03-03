@@ -15,7 +15,7 @@ namespace CvPls\Chrome;
 
 use \CvPls\Build\UpdateManifestFactory;
 use \CvPls\Build\DataSigner;
-use \CvPls\Build\Package;
+use \CvPls\Build\PackageFile;
 
 /**
  * Factory which makes Chrome-specific update manifest objects
@@ -30,13 +30,12 @@ class ChromeUpdateManifestFactory implements UpdateManifestFactory
      * Create a new update manifest instance
      *
      * @param \CvPls\Build\DataSigner $dataSigner Data signer object
-     * @param \CvPls\Build\Package    $package    Package object
      * @param string                  $version    Version of package binary
      * @param string                  $packageUrl URL of package binary
      *
      * @return \CvPls\Chrome\ChromeUpdateManifest The created instance
      */
-    public function create(DataSigner $dataSigner, Package $package, $version, $packageUrl)
+    public function create(DataSigner $dataSigner, $version, $packageUrl)
     {
         $idGenerator = new IdGenerator($dataSigner->getKeyPair());
 

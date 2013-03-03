@@ -66,9 +66,9 @@ class IdGenerator
     /**
      * Set the internal DataSigner object
      *
-     * @param \CvPls\Build\DataSigner $dataSigner The new DataSigner object
+     * @param \CvPls\Build\KeyPair $keyPair The new DataSigner object
      */
-    public function setDataSigner(KeyPair $keyPair)
+    public function setKeyPair(KeyPair $keyPair)
     {
       $this->keyPair = $keyPair;
     }

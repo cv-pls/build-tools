@@ -13,7 +13,7 @@
 
 namespace CvPls\Chrome;
 
-use \CvPls\Build\Package;
+use \CvPls\Build\PackageFile;
 use \CvPls\Build\DataSigner;
 use \CvPls\Build\KeyPair;
 
@@ -24,7 +24,7 @@ use \CvPls\Build\KeyPair;
  * @package  Chrome
  * @author   Chris Wright <info@daverandom.com>
  */
-class CRXFile extends Package
+class CRXFile extends PackageFile
 {
     /**
      * @var \CvPls\Build\DataSigner Object used for signing the package

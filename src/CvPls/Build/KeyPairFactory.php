@@ -1,6 +1,6 @@
 <?php
 /**
- * Interface for factories which make browser-specific package objects
+ * Factory which makes cryptographic key pair objects
  *
  * PHP version 5.4
  *
@@ -14,17 +14,21 @@
 namespace CvPls\Build;
 
 /**
- * Interface for factories which make browser-specific package objects
+ * Factory which makes cryptographic key pair objects
  *
  * @category [cv-pls]
  * @package  Build
  * @author   Chris Wright <info@daverandom.com>
  */
-interface PackageFactory {
+class KeyPairFactory
+{
     /**
-     * Create a new package instance
+     * Create a key pair instance
      *
-     * @return \CvPls\Build\Package The created instance
+     * @return \CvPls\Build\KeyPair The created instance
      */
-    public function create(DataSigner $dataSigner);
+    public function create($pemFile = null)
+    {
+        return new KeyPair($pemFile);
+    }
 }

@@ -20,7 +20,7 @@ namespace CvPls\Build;
  * @package  Build
  * @author   Chris Wright <info@daverandom.com>
  */
-abstract class Package extends \ZipArchive
+abstract class PackageFile extends \ZipArchive
 {
     /**
      * @var string Temporary directory path

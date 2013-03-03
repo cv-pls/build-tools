@@ -20,7 +20,7 @@ namespace CvPls\Build;
  * @package  Build
  * @author   Chris Wright <info@daverandom.com>
  */
-class Argv
+class ArgvParser
 {
     /**
      * @var array The raw parsed argument arrays

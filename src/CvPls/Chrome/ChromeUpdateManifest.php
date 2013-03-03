@@ -106,7 +106,7 @@ class ChromeUpdateManifest extends UpdateManifest
      *
      * @return bool|string If writing to file then true on success, otherwise the file data as a string
      */
-    public function save($path = NULL)
+    public function save($path = null)
     {
         if (isset($path)) {
             return $this->document->save($path);

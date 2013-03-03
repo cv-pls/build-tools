@@ -56,7 +56,7 @@ class DataSigner
      */
     public function setKeyPair(KeyPair $keyPair)
     {
-        $this->keyPair = (int) $keyPair;
+        $this->keyPair = $keyPair;
     }
 
     /**

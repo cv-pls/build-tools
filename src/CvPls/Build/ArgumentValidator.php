@@ -60,7 +60,7 @@ class ArgumentValidator
     private function log($message)
     {
         if (isset($this->logger)) {
-            $this->logger->log($message . "\n");
+            $this->logger->log($message);
         }
     }
 
@@ -79,33 +79,6 @@ class ArgumentValidator
 
         @fclose($fp);
         return true;
-    }
-
-    /**
-     * Get the target platform from the raw arguments
-     *
-     * @return string The target platform identifier
-     *
-     * @throws \LogicException When no platform or more than one platform is specified
-     */
-    private function getPlatform()
-    {
-        if ($this->argvParser->hasFlag(['chrome'])) {
-            $platform = 'chrome';
-        }
-        if ($this->argvParser->hasFlag(['mozilla'])) {
-            if (isset($platform)) {
-                throw new \LogicException('You must specify only one target platform');
-            }
-
-            $platform = 'mozilla';
-        }
-
-        if (!isset($platform)) {
-            throw new \LogicException('You must specify a target platform with the --chrome or --mozilla flags');
-        }
-
-        return $platform;
     }
 
     /**
@@ -150,7 +123,7 @@ class ArgumentValidator
     {
         $this->log('Validating private key file...');
 
-        if (!$keyFile = current($args->getArg(['k', 'key']))) {
+        if (!$keyFile = current($this->argvParser->getArg(['k', 'key']))) {
             throw new \LogicException('No private key specified, you must use the -k/--key option');
         }
         if (!is_file($keyFile) || !is_readable($keyFile)) {
@@ -173,7 +146,7 @@ class ArgumentValidator
     {
         $this->log('Locating package source base directory...');
 
-        $baseDir = current($args->getArg(['d', 'base-dir'], getcwd()));
+        $baseDir = current($this->argvParser->getArg(['d', 'base-dir'], getcwd()));
         if (!is_dir($baseDir) || !is_readable($baseDir)) {
             throw new \LogicException('The specified base directory does not exist or not readable');
         }
@@ -192,7 +165,7 @@ class ArgumentValidator
     {
         $this->log('Detecting package version...');
 
-        $version = current($args->getArg(['v', 'version']));
+        $version = current($this->argvParser->getArg(['v', 'version']));
         if ($version !== false) {
             $this->log('Package version detected successfully: ' . $version);
         } else {
@@ -214,9 +187,9 @@ class ArgumentValidator
     {
         $this->log('Detecting output file path...');
 
-        $outFile = current($args->getArg(['o', 'out-file']));
+        $outFile = current($this->argvParser->getArg(['o', 'out-file']));
         if ($outFile !== false) {
-            if (file_exists($outFile) && !$args->hasFlag(['f', 'force'])) {
+            if (file_exists($outFile) && !$this->argvParser->hasFlag(['f', 'force'])) {
                 throw new \LogicException('The specified output file already exists, use the -f/--force option to overwrite');
             } else if (!$this->openAndTruncateFile($outFile)) {
                 throw new \LogicException('Unable to open output file in read/write mode');
@@ -238,13 +211,13 @@ class ArgumentValidator
      */
     private function getManifestFilePath()
     {
-        if ($args->hasFlag(['n', 'no-manifest'])) {
+        if ($this->argvParser->hasFlag(['n', 'no-manifest'])) {
             return false;
         }
     
         $this->log('Detecting manifest file path...');
 
-        $manifestFile = current($args->getArg(['m', 'manifest']));
+        $manifestFile = current($this->argvParser->getArg(['m', 'manifest']));
         if ($manifestFile !== false) {
             if (!$this->openAndTruncateFile($manifestFile)) {
                 throw new \LogicException('Unable to open manifest file in read/write mode');
@@ -274,7 +247,7 @@ class ArgumentValidator
     
         $this->log('Detecting URL for manifest file...');
 
-        $url = current($args->getArg(['u', 'url']));
+        $url = current($this->argvParser->getArg(['u', 'url']));
         if ($url === false) {
             throw new \LogicException('Unable to detect manifest URL');
         }

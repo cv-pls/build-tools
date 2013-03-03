@@ -80,7 +80,7 @@ class KeyPair
      * @throws \InvalidArgumentException When the file path does not exist or does not contain a valid private PEM formatted key
      * @throws \RuntimeException         When the file path cannot be read
      */
-    public function __construct($pemFile = NULL)
+    public function __construct($pemFile = null)
     {
         if ($pemFile !== NULL) {
             $this->loadKeysFromFile($pemFile);
