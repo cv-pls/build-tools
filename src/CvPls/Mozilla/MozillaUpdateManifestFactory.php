@@ -13,9 +13,9 @@
 
 namespace CvPls\Mozilla;
 
-use \CvPls\Build\UpdateManifestFactory;
-use \CvPls\Build\DataSigner;
-use \CvPls\Build\Package;
+use \CvPls\Build\UpdateManifestFactory,
+    \CvPls\Build\DataSigner,
+    \CvPls\Build\Package;
 
 /**
  * Factory which makes Mozilla-specific update manifest objects
@@ -33,9 +33,10 @@ class MozillaUpdateManifestFactory implements UpdateManifestFactory
      * @param \CvPls\Build\Package    $package    Package object
      * @param string                  $packageUrl URL of package binary
      *
-     * @return \CvPls\Chrome\MozillaUpdateManifest The created instance
+     * @return \CvPls\Mozilla\MozillaUpdateManifest The created instance
      */
     public function create(DataSigner $dataSigner, Package $package, $packageUrl)
     {
+        return new MozillaUpdateManifest($dataSigner, $package, $packageUrl);
     }
 }

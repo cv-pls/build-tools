@@ -14,6 +14,7 @@
 namespace CvPls\Mozilla;
 
 use \CvPls\Build\UpdateManifest,
+    \CvPls\Build\DataSigner,
     \CvPls\Build\Package;
 
 /**
@@ -51,6 +52,11 @@ class MozillaUpdateManifest extends UpdateManifest
     private $extensionGUID = 'cv-pls@stackoverflow.com';
 
     /**
+     * @var \CvPls\Build\DataSigner Data signer object
+     */
+    private $dataSigner;
+
+    /**
      * @var \DOMDocument Update manifest document
      */
     private $document;
@@ -69,6 +75,25 @@ class MozillaUpdateManifest extends UpdateManifest
      * @var \DOMElement Sequence container element of update manifest document
      */
     private $seqEl;
+
+    /**
+     * Constructor
+     *
+     * @param \CvPls\Build\DataSigner $dataSigner Data signer object
+     * @param \CvPls\Build\Package    $package    Package object
+     * @param string                  $url        URL of package binary
+     */
+    public function __construct(DataSigner $dataSigner, Package $package = null, $packageUrl = null)
+    {
+        if (isset($dataSigner)) {
+            $this->setDataSigner($dataSigner);
+        }
+        if (isset($package)) {
+            $this->setPackage($package);
+        }
+
+        $this->setPackageUrl($packageUrl);
+    }
 
     /**
      * Get the length of a data string for use in DER formatted wrapper
@@ -92,16 +117,15 @@ class MozillaUpdateManifest extends UpdateManifest
     }
 
     /**
-     * Get the hash of a file on disk in a format sutiable for a mozilla update manifest
+     * Get the hash of a file on disk in a format suitable for a mozilla update manifest
      *
      * @param string $file Path to file
-     * @param string $algo Algorithm identifier
      *
      * @return string The file hash
      */
-    private function getFileHash($file, $algo = 'sha512')
+    private function getFileHash($file)
     {
-        return $algo . ':' . hash_file($algo, $file);
+        return 'sha512:' . hash_file('sha512', $file);
     }
 
     /**
@@ -113,15 +137,12 @@ class MozillaUpdateManifest extends UpdateManifest
      *
      * @return string The signature
      */
-    private function generateSignature($signatureTarget) {
-        // TODO: Add support for other algorithms
-        $algo = 'sha512';
-        $algoId = "\x0d";
-
-        openssl_sign($signatureTarget, $signature, $this->privateKey, 'sha512');
+    private function generateSignature($signatureTarget)
+    {
+        $signature = $this->dataSigner->signString($signatureTarget, 'sha512');
 
         // There are some rather interesting standards violations that Mozilla engage in for this.
-        // Here is the first of them:
+        // Here is the first of them. I have no idea where this random null byte comes from.
         $signature = "\x00".$signature;
 
         // Encode as a DER BIT STRING field
@@ -129,7 +150,7 @@ class MozillaUpdateManifest extends UpdateManifest
 
         // Here is another one
         // The standard states that there should be a NULL short on the end of the SEQUENCE (\x05\x00)
-        $derAlgoId = "\x30\x0b\x06\x09\x2a\x86\x48\x86\xf7\x0d\x01\x01".$algoId;
+        $derAlgoId = "\x30\x0b\x06\x09\x2a\x86\x48\x86\xf7\x0d\x01\x01\x0d";
 
         // Encode as SEQUENCE
         $derData = "\x30".$this->getDERLength($derAlgoId.$derSignature).$derAlgoId.$derSignature;
@@ -142,7 +163,7 @@ class MozillaUpdateManifest extends UpdateManifest
      */
     private function initialiseDocument()
     {
-        $this->document = new DOMDocument('1.0', 'utf-8');
+        $this->document = new \DOMDocument('1.0', 'utf-8');
         $this->document->formatOutput = true;
 
         $this->rootEl = $this->document->createElementNS($this->rdfUrl, 'RDF:RDF');
@@ -156,7 +177,7 @@ class MozillaUpdateManifest extends UpdateManifest
     private function createRDFContainer()
     {
         $this->containerEl = $this->document->createElementNS($this->rdfUrl, 'RDF:Description');
-        $this->containerEl->setAttribute('about', 'urn:mozilla:extension:'.$this->extnGUID);
+        $this->containerEl->setAttribute('about', 'urn:mozilla:extension:'.$this->extensionGUID);
         $this->rootEl->appendChild($this->containerEl);
 
         $updatesEl = $this->document->createElementNS($this->emUrl, 'em:updates');
@@ -166,40 +187,33 @@ class MozillaUpdateManifest extends UpdateManifest
         $updatesEl->appendChild($this->seqEl);
     }
 
-    /**
-     * Create main container element
-     */
-    private function createRDFVersions() {
-      foreach ($this->versions as $version => $info) {
-        $this->createRDFVersion($version, $info);
-      }
-    }
+    private function createRDFVersion()
+    {
+        $liEl = $this->document->createElementNS($this->rdfUrl, 'RDF:li');
+        $this->seqEl->appendChild($liEl);
+        $itemEl = $this->document->createElementNS($this->rdfUrl, 'RDF:Description');
+        $itemEl->setAttribute('about', 'urn:mozilla:extension:'.$this->extensionGUID.':'.$this->package->getPackageVersion());
+        $liEl->appendChild($itemEl);
 
-    private function createRDFVersion($version, $info) {
-      list($itemEl, $appContainerEl) = $this->createRDFVersionContainer($version);
+        $targetAppEl = $this->document->createElementNS($this->emUrl, 'em:targetApplication');
+        $itemEl->appendChild($targetAppEl);
+        $appContainerEl = $this->document->createElementNS($this->rdfUrl, 'RDF:Description');
+        $targetAppEl->appendChild($appContainerEl);
 
-      ksort($info); // MUST be alphabetical order!
-      foreach ($info as $tagName => $data) {
-        $appContainerEl->appendChild($this->document->createElementNS($this->emUrl, "em:$tagName", htmlspecialchars($data)));
-      }
+        // Keys MUST be alphabetical order!
+        $info = [
+            'id' => $this->firefoxGUID,
+            'maxVersion' => '99.*',
+            'minVersion' => '10.0',
+            'updateHash' => $this->getFileHash($this->package->getOutputFilePath()),
+            'updateLink' => $this->packageUrl
+        ];
+        foreach ($info as $tagName => $data) {
+            $appContainerEl->appendChild($this->document->createElementNS($this->emUrl, "em:$tagName", htmlspecialchars($data)));
+        }
 
-      $versionEl = $this->document->createElementNS($this->emUrl, 'em:version', $version);
-      $itemEl->appendChild($versionEl);
-    }
-
-    private function createRDFVersionContainer($version) {
-      $liEl = $this->document->createElementNS($this->rdfUrl, 'RDF:li');
-      $this->seqEl->appendChild($liEl);
-      $itemEl = $this->document->createElementNS($this->rdfUrl, 'RDF:Description');
-      $itemEl->setAttribute('about', 'urn:mozilla:extension:'.$this->extnGUID.':'.$version);
-      $liEl->appendChild($itemEl);
-
-      $targetAppEl = $this->document->createElementNS($this->emUrl, 'em:targetApplication');
-      $itemEl->appendChild($targetAppEl);
-      $appContainerEl = $this->document->createElementNS($this->rdfUrl, 'RDF:Description');
-      $targetAppEl->appendChild($appContainerEl);
-
-      return array($itemEl, $appContainerEl);
+        $versionEl = $this->document->createElementNS($this->emUrl, 'em:version', $this->package->getPackageVersion());
+        $itemEl->appendChild($versionEl);
     }
 
     /**
@@ -214,18 +228,23 @@ class MozillaUpdateManifest extends UpdateManifest
     }
 
     /**
-     * Constructor
+     * Get the data signer object
      *
-     * @param \CvPls\Build\Package      $package     Package object
-     * @param string                    $url         URL of package binary
+     * @return \CvPls\Build\DataSigner Data signer object
      */
-    public function __construct(Package $package = null, $packageUrl = null)
+    public function getDataSigner()
     {
-        if (isset($package)) {
-            $this->setPackage($package);
-        }
+        return $this->package;
+    }
 
-        $this->setPackageUrl($packageUrl);
+    /**
+     * Set the data signer object
+     *
+     * @param \CvPls\Build\DataSigner $dataSigner Data signer object
+     */
+    public function setDataSigner(DataSigner $dataSigner)
+    {
+        $this->dataSigner = $dataSigner;
     }
 
     /**
@@ -235,7 +254,7 @@ class MozillaUpdateManifest extends UpdateManifest
     {
         $this->initialiseDocument();
         $this->createRDFContainer();
-        $this->createRDFVersions();
+        $this->createRDFVersion();
         $this->signManifest();
     }
 
