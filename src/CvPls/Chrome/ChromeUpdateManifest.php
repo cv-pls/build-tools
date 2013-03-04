@@ -13,7 +13,8 @@
 
 namespace CvPls\Chrome;
 
-use \CvPls\Build\UpdateManifest;
+use \CvPls\Build\UpdateManifest,
+    \CvPls\Build\Package;
 
 /**
  * Update manifest builder for Chrome
@@ -43,16 +44,17 @@ class ChromeUpdateManifest extends UpdateManifest
      * Constructor
      *
      * @param \CvPls\Chrome\IdGenerator $idGenerator Extension ID generator
-     * @param string                    $version     Version of package binary
+     * @param \CvPls\Build\Package      $package     Package object
      * @param string                    $url         URL of package binary
      */
-    public function __construct(IdGenerator $idGenerator = null, $version = null, $packageUrl = null)
+    public function __construct(IdGenerator $idGenerator = null, Package $package = null, $packageUrl = null)
     {
-        if ($idGenerator !== NULL) {
+        if (isset($idGenerator)) {
             $this->setIdGenerator($idGenerator);
         }
-
-        $this->setVersion($version);
+        if (isset($package)) {
+            $this->setPackage($package);
+        }
         $this->setPackageUrl($packageUrl);
     }
 
@@ -95,7 +97,7 @@ class ChromeUpdateManifest extends UpdateManifest
 
         $updateCheckEl = $this->document->createElementNS($this->nsUrl, 'updatecheck');
         $updateCheckEl->setAttribute('codebase', $this->packageUrl);
-        $updateCheckEl->setAttribute('version', $this->version);
+        $updateCheckEl->setAttribute('version', $this->package->getPackageVersion());
         $appEl->appendChild($updateCheckEl);
     }
 

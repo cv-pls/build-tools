@@ -63,6 +63,16 @@ HELP;
                 break;
 
             case 'mozilla':
+                $package = new Mozilla\XPIPackage(
+                    $arguments,
+                    new Build\KeyPairFactory,
+                    new Build\DataSignerFactory,
+                    new Mozilla\XPIFileFactory,
+                    new Mozilla\MozillaUpdateManifestFactory,
+                    $logger
+                );
+                $package->validate();
+                $package->build();
                 break;
         }
     } catch (Exception $e) {

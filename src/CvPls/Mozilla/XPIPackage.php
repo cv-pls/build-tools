@@ -1,34 +1,34 @@
 <?php
 /**
- * CRX package builder
+ * XPI package builder
  *
  * PHP version 5.4
  *
  * @category [cv-pls]
- * @package  Chrome
+ * @package  Mozilla
  * @author   Chris Wright <info@daverandom.com>
  * @license  http://www.opensource.org/licenses/mit-license.html MIT License
  * @version  1.0.0
  */
 
-namespace CvPls\Chrome;
+namespace CvPls\Mozilla;
 
 use \CvPls\Build\Arguments,
     \CvPls\Build\KeyPairFactory,
     \CvPls\Build\DataSignerFactory,
     \CvPls\Build\Package,
-    \CvPls\Chrome\CRXFileFactory,
-    \CvPls\Chrome\ChromeUpdateManifestFactory,
+    \CvPls\Mozilla\XPIFileFactory,
+    \CvPls\Mozilla\MozillaUpdateManifestFactory,
     \CvPls\Build\Loggable;
 
 /**
- * CRX package builder
+ * XPI package builder
  *
  * @category [cv-pls]
- * @package  Chrome
+ * @package  Mozilla
  * @author   Chris Wright <info@daverandom.com>
  */
-class CRXPackage implements Package
+class XPIPackage implements Package
 {
     /**
      * @var \CvPls\Build\Arguments Package arguments
@@ -46,12 +46,12 @@ class CRXPackage implements Package
     private $dataSignerFactory;
 
     /**
-     * @var \CvPls\Build\CRXFileFactory Factory which makes CRX file objects
+     * @var \CvPls\Build\XPIFileFactory Factory which makes XPI file objects
      */
-    private $crxFileFactory;
+    private $xpiFileFactory;
 
     /**
-     * @var \CvPls\Build\ChromeUpdateManifestFactory Factory which makes update manifest objects
+     * @var \CvPls\Build\MozillaUpdateManifestFactory Factory which makes update manifest objects
      */
     private $updateManifestFactory;
 
@@ -66,9 +66,14 @@ class CRXPackage implements Package
     private $keyPair;
 
     /**
-     * @var \stdClass Package manifest data
+     * @var \DOMDocument Install RDF document
      */
-    private $manifest;
+    private $installRdf;
+
+    /**
+     * @var \DOMXPath Install RDF xpath object
+     */
+    private $installRdfXpath;
 
     /**
      * @var string Version to use for built package
@@ -93,25 +98,25 @@ class CRXPackage implements Package
     /**
      * Constructor
      *
-     * @param \CvPls\Build\Arguments                    $arguments             Package arguments
-     * @param \CvPls\Build\KeyPairFactory               $keyPairFactory        Factory which makes key pair objects
-     * @param \CvPls\Build\DataSignerFactory            $dataSignerFactory     Factory which makes data signer objects
-     * @param \CvPls\Chrome\CRXFileFactory              $crxFileFactory        Factory which makes CRX file objects
-     * @param \CvPls\Chrome\ChromeUpdateManifestFactory $updateManifestFactory Factory which makes update manifest objects
-     * @param \CvPls\Build\Loggable                     $logger                Logging object
+     * @param \CvPls\Build\Arguments                      $arguments             Package arguments
+     * @param \CvPls\Build\KeyPairFactory                 $keyPairFactory        Factory which makes key pair objects
+     * @param \CvPls\Build\DataSignerFactory              $dataSignerFactory     Factory which makes data signer objects
+     * @param \CvPls\Mozilla\XPIFileFactory               $xpiFileFactory        Factory which makes XPI file objects
+     * @param \CvPls\Mozilla\MozillaUpdateManifestFactory $updateManifestFactory Factory which makes update manifest objects
+     * @param \CvPls\Build\Loggable                       $logger                Logging object
      */
     public function __construct(
         Arguments $arguments,
         KeyPairFactory $keyPairFactory,
         DataSignerFactory $dataSignerFactory,
-        CRXFileFactory $crxFileFactory,
-        ChromeUpdateManifestFactory $updateManifestFactory,
+        XPIFileFactory $xpiFileFactory,
+        MozillaUpdateManifestFactory $updateManifestFactory,
         Loggable $logger = null
     ) {
         $this->arguments = $arguments;
         $this->keyPairFactory = $keyPairFactory;
         $this->dataSignerFactory = $dataSignerFactory;
-        $this->crxFileFactory = $crxFileFactory;
+        $this->xpiFileFactory = $xpiFileFactory;
         $this->updateManifestFactory = $updateManifestFactory;
         $this->logger = $logger;
     }
@@ -131,25 +136,28 @@ class CRXPackage implements Package
     /**
      * Load manifest data from file
      */
-    private function loadManifestFile()
+    private function loadInstallRdf()
     {
-        $this->log('Loading manifest file');
+        $this->log('Loading install.rdf');
 
-        $manifestPath = $this->arguments->getBaseDir() . '/manifest.json';
+        $manifestPath = $this->arguments->getBaseDir() . '/install.rdf';
         if (!is_file($manifestPath) || !is_readable($manifestPath)) {
-            throw new \RuntimeException('Manifest file does not exist or is not readable');
+            throw new \RuntimeException('install.rdf does not exist or is not readable');
         }
 
         $raw = file_get_contents($manifestPath);
         if (!$raw) {
-            throw new \RuntimeException('Reading manifest file failed');
+            throw new \RuntimeException('Reading install.rdf failed');
         }
 
-        if (!$manifest = json_decode($raw)) {
-            throw new \RuntimeException('Manifest file does not contain valid JSON');
+        $installRdf = new \DOMDocument;
+        if (!@$installRdf->loadXML($raw)) {
+            throw new \RuntimeException('install.rdf does not contain valid XML');
         }
 
-        $this->manifest = $manifest;
+        $this->installRdf = $installRdf;
+        $this->installRdfXpath = new \DOMXpath($installRdf);
+        $this->installRdfXpath->registerNamespace('em', 'http://www.mozilla.org/2004/em-rdf#');
     }
 
     /**
@@ -157,10 +165,11 @@ class CRXPackage implements Package
      */
     private function resolvePackageVersion()
     {
+        $versionNode = $this->installRdfXpath->query('//em:version')->item(0)->firstChild;
         if ($version = $this->arguments->getVersion()) {
-            $this->packageVersion = $this->manifest->version = $version;
+            $this->packageVersion = $versionNode->data = $version;
         } else {
-            $this->packageVersion = $this->manifest->version;
+            $this->packageVersion = $versionNode->data;
             $this->log('Package version: ' . $this->packageVersion);
         }
     }
@@ -173,7 +182,7 @@ class CRXPackage implements Package
         if ($path = $this->arguments->getOutFile()) {
             $this->outputFilePath = $path;
         } else {
-            $this->outputFilePath = getcwd() . DIRECTORY_SEPARATOR . "cv-pls_{$this->packageVersion}.crx";
+            $this->outputFilePath = getcwd() . DIRECTORY_SEPARATOR . "cv-pls_{$this->packageVersion}.xpi";
             $this->log('Output file path: ' . $this->outputFilePath);
         }
     }
@@ -191,7 +200,7 @@ class CRXPackage implements Package
             if ($path = $this->arguments->getManifestFile()) {
                 $this->updateManifestPath = $path;
             } else {
-                $this->updateManifestPath = getcwd() . DIRECTORY_SEPARATOR . "update_{$this->packageVersion}.xml";
+                $this->updateManifestPath = getcwd() . DIRECTORY_SEPARATOR . "update_{$this->packageVersion}.rdf";
                 $this->log('Update manifest file path: ' . $this->outputFilePath);
             }
         }
@@ -207,48 +216,46 @@ class CRXPackage implements Package
     }
 
     /**
-     * Build the CRX file
+     * Build the XPI file
      */
-    private function createCrxFile($dataSigner)
+    private function createXpiFile($dataSigner)
     {
         $this->log('Building package binary');
-        $crxFile = $this->crxFileFactory->create($dataSigner);
-        $crxFile->open($this->outputFilePath);
+        $xpiFile = $this->xpiFileFactory->create($dataSigner);
+        $xpiFile->open($this->outputFilePath);
 
         $files = glob($this->arguments->getBaseDir() . '/*');
         foreach ($files as $file) {
-            if ($file !== $this->arguments->getBaseDir() . '/manifest.json') {
+            if ($file !== $this->arguments->getBaseDir() . '/install.rdf') {
                 $this->log('Adding file: ' . $file);
                 if (is_file($file)) {
-                    $crxFile->addFile($file, basename($file));
+                    $xpiFile->addFile($file, basename($file));
                 } else {
-                    $crxFile->addDir($file);
+                    $xpiFile->addDir($file);
                 }
             }
         }
 
         $this->log('Adding extension manifest');
-        $crxFile->addFromString('manifest.json', json_encode($this->manifest));
+        $xpiFile->addFromString('install.rdf', $this->installRdf->saveXML());
 
         $this->log('Compressing package');
-        $crxFile->close();
+        $xpiFile->close();
 
         $this->log('Binary built successfully');
     }
 
     /**
-     * Build the CRX file
+     * Build the XPI file
      */
     private function createUpdateManifest($dataSigner)
     {
         if ($this->makeUpdateManifest) {
-            $this->log('Creating update manifest file');
             $manifest = $this->updateManifestFactory->create($dataSigner, $this, $this->arguments->getURL());
 
             $manifest->generate();
 
             $manifest->save($this->updateManifestPath);
-            $this->log('Update manifest file created successfully');
         }
     }
 
@@ -297,7 +304,7 @@ class CRXPackage implements Package
      */
     public function validate()
     {
-        $this->loadManifestFile();
+        $this->loadInstallRdf();
 
         $this->resolvePackageVersion();
         $this->resolveOutputFilePath();
@@ -311,13 +318,11 @@ class CRXPackage implements Package
      */
     public function build()
     {
-        $this->log('Building Chrome extension');
+        $this->log('Building Mozilla extension');
 
         $dataSigner = $this->dataSignerFactory->create($this->keyPair);
 
-        $this->createCrxFile($dataSigner);
+        $this->createXpiFile($dataSigner);
         $this->createUpdateManifest($dataSigner);
-
-        $this->log('Build process complete');
     }
 }

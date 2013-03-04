@@ -28,9 +28,9 @@ abstract class UpdateManifest
     protected $packageUrl;
 
     /**
-     * @var string Version of package binary
+     * @var string Package object
      */
-    protected $version;
+    protected $package;
 
     /**
      * Get the URL of package binary
@@ -53,23 +53,23 @@ abstract class UpdateManifest
     }
 
     /**
-     * Get the version of package binary
+     * Get the package object
      *
-     * @return string Version of package binary
+     * @return \CvPls\Build\Package Package object
      */
-    public function getVersion()
+    public function getPackage()
     {
-        return $this->version;
+        return $this->package;
     }
 
     /**
-     * Set the version of package binary
+     * Set the package object
      *
-     * @param string $version Version of package binary
+     * @param \CvPls\Build\Package $package Package object
      */
-    public function setVersion($version)
+    public function setPackage(Package $package)
     {
-        $this->version = $version;
+        $this->package = $package;
     }
 
     /**
