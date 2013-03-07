@@ -58,6 +58,11 @@ class Arguments
     private $url;
 
     /**
+     * @var string Full URL of update manifest file
+     */
+    private $updateUrl;
+
+    /**
      * Create an arguments object
      *
      * @param string $platform     Target platform identifier
@@ -67,8 +72,9 @@ class Arguments
      * @param string $outFile      Path to package output file
      * @param string $manifestFile Path to update manifest file
      * @param string $url          Full URL of package file
+     * @param string $updateUrl    Full URL of update manifest file
      */
-    public function __construct($platform, $keyFile, $baseDir, $version, $outFile, $manifestFile, $url)
+    public function __construct($platform, $keyFile, $baseDir, $version, $outFile, $manifestFile, $url, $updateUrl)
     {
         $this->platform = $platform;
         $this->keyFile = $keyFile;
@@ -77,6 +83,7 @@ class Arguments
         $this->outFile = $outFile;
         $this->manifestFile = $manifestFile;
         $this->url = $url;
+        $this->updateUrl = $updateUrl;
     }
 
     /**
@@ -147,5 +154,15 @@ class Arguments
     public function getURL()
     {
         return $this->url;
+    }
+
+    /**
+     * Get the full URL of package file
+     *
+     * @return string Full URL of package file
+     */
+    public function getUpdateURL()
+    {
+        return $this->updateUrl;
     }
 }

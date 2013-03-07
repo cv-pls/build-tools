@@ -166,6 +166,18 @@ class CRXPackage implements Package
     }
 
     /**
+     * Resolve update URL to use
+     */
+    private function resolveUpdateUrl()
+    {
+        if ($url = $this->arguments->getUpdateUrl()) {
+            $this->manifest->update_url = $url;
+        } else {
+            $this->log('Update URL: ' . $this->manifest->update_url);
+        }
+    }
+
+    /**
      * Resolve output file path
      */
     private function resolveOutputFilePath()
@@ -300,6 +312,7 @@ class CRXPackage implements Package
         $this->loadManifestFile();
 
         $this->resolvePackageVersion();
+        $this->resolveUpdateUrl();
         $this->resolveOutputFilePath();
         $this->resolveUpdateManifestPath();
 

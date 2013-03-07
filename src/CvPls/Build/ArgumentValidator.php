@@ -258,6 +258,25 @@ class ArgumentValidator
     }
 
     /**
+     * Get the full URL of the update manifest file
+     *
+     * @return string|null The full URL of the update manifest file
+     */
+    private function getUpdateUrl()
+    {
+        $this->log('Detecting URL of update manifest file...');
+
+        $url = current($this->argvParser->getArg(['p', 'updateurl'])) ?: null;
+        if ($url === null) {
+            $this->log('Update URL will be determined from install manifest');
+        } else {
+            $this->log('URL detected successfully: ' . $url);
+        }
+
+        return $url;
+    }
+
+    /**
      * Get the argv parser
      *
      * @return \CvPls\Build\ArgvParser Command line argument parser
@@ -331,7 +350,8 @@ class ArgumentValidator
         $outFile      = $this->getOutputFilePath($version);
         $manifestFile = $this->getManifestFilePath();
         $url          = $this->getUrl($manifestFile);
+        $updateUrl    = $this->getUpdateUrl();
 
-        return $this->argumentsFactory->create($platform, $keyFile, $baseDir, $version, $outFile, $manifestFile, $url);
+        return $this->argumentsFactory->create($platform, $keyFile, $baseDir, $version, $outFile, $manifestFile, $url, $updateUrl);
     }
 }

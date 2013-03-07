@@ -175,6 +175,20 @@ class XPIPackage implements Package
     }
 
     /**
+     * Resolve update URL
+     */
+    private function resolveUpdateUrl()
+    {
+        $urlNode = $this->installRdfXpath->query('//em:updateURL')->item(0)->firstChild;
+
+        if ($url = $this->arguments->getUpdateUrl()) {
+            $urlNode->data = $url;
+        } else {
+            $this->log('Update URL: ' . $urlNode->data);
+        }
+    }
+
+    /**
      * Resolve output file path
      */
     private function resolveOutputFilePath()

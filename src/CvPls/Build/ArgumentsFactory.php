@@ -27,8 +27,8 @@ class ArgumentsFactory
      *
      * @return \CvPls\Build\Arguments The created arguments object
      */
-    public function create($platform, $keyFile, $baseDir, $version, $outFile, $manifestFile, $url)
+    public function create($platform, $keyFile, $baseDir, $version, $outFile, $manifestFile, $url, $updateUrl)
     {
-        return new Arguments($platform, $keyFile, $baseDir, $version, $outFile, $manifestFile, $url);
+        return new Arguments($platform, $keyFile, $baseDir, $version, $outFile, $manifestFile, $url, $updateUrl);
     }
 }
