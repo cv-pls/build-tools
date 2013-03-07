@@ -57,7 +57,7 @@
       . ' -v ' . $version
       . ' -d chrome-cv-pls/src'
       . ' -u ' . $baseUrl . 'chrome/dev/cv-pls_' . $version . '.crx'
-      . ' -p ' . $baseUrl . 'update/chrome?branch=' . $branch;
+      . ' -p ' . $baseUrl . 'update/chrome?branch=' . $branch
     );
 
     foreach ($existing as $file) {
@@ -117,7 +117,7 @@
       . ' -v ' . $version
       . ' -d ff-cv-pls/src'
       . ' -u ' . $baseUrl . 'mozilla/dev/cv-pls_' . $version . '.xpi'
-      . ' -p ' . $baseUrl . 'update/mozilla?branch=' . $branch;
+      . ' -p ' . $baseUrl . 'update/mozilla?branch=' . $branch
     );
     
     foreach ($existing as $file) {
