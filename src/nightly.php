@@ -2,6 +2,7 @@
 
   $history = 5;
   $baseUrl = 'https://cv-pls.pieterhordijk.com/';
+  $branch = 'alpha';
 
   chdir(dirname(dirname(__DIR__)));
 
@@ -18,11 +19,11 @@
   if (!file_exists('chrome-cv-pls')) {
     run("$gitBase clone git://github.com/cv-pls/chrome-cv-pls");
     chdir('chrome-cv-pls');
-    run("$gitBase checkout dev");
+    run("$gitBase checkout $branch");
     run("$gitBase submodule update --init");
   } else {
     chdir('chrome-cv-pls');
-    run("$gitBase checkout dev");
+    run("$gitBase checkout $branch");
     $currentCommit = trim(run("$gitBase rev-parse HEAD"));
     run("$gitBase pull");
     run("$gitBase submodule update");
@@ -56,7 +57,7 @@
       . ' -v ' . $version
       . ' -d chrome-cv-pls/src'
       . ' -u ' . $baseUrl . 'chrome/dev/cv-pls_' . $version . '.crx'
-      . ' -p ' . $baseUrl . 'update/chrome?branch=dev'
+      . ' -p ' . $baseUrl . 'update/chrome?branch=' . $branch;
     );
 
     foreach ($existing as $file) {
@@ -72,11 +73,11 @@
   if (!file_exists('ff-cv-pls')) {
     run("$gitBase clone git://github.com/cv-pls/ff-cv-pls");
     chdir('ff-cv-pls');
-    run("$gitBase checkout dev");
+    run("$gitBase checkout $branch");
     run("$gitBase submodule update --init");
   } else {
     chdir('ff-cv-pls');
-    run("$gitBase checkout dev");
+    run("$gitBase checkout $branch");
     $currentCommit = trim(run("$gitBase rev-parse HEAD"));
     run("$gitBase pull");
     run("$gitBase submodule update");
@@ -116,7 +117,7 @@
       . ' -v ' . $version
       . ' -d ff-cv-pls/src'
       . ' -u ' . $baseUrl . 'mozilla/dev/cv-pls_' . $version . '.xpi'
-      . ' -p ' . $baseUrl . 'update/mozilla?branch=dev'
+      . ' -p ' . $baseUrl . 'update/mozilla?branch=' . $branch;
     );
     
     foreach ($existing as $file) {
