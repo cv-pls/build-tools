@@ -321,6 +321,7 @@ class XPIPackage implements Package
         $this->loadInstallRdf();
 
         $this->resolvePackageVersion();
+        $this->resolveUpdateUrl();
         $this->resolveOutputFilePath();
         $this->resolveUpdateManifestPath();
 
