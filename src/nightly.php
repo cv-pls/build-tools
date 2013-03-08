@@ -48,15 +48,15 @@
 
   if ($newCommit !== $currentCommit || !$existing) {
     $versionIncrement++;
-    $version = json_decode(file_get_contents('chrome-cv-pls/src/manifest.json'))->version . '.' . $versionIncrement;
+    $chromeVersion = json_decode(file_get_contents('chrome-cv-pls/src/manifest.json'))->version . '.' . $versionIncrement;
     run(
         'php build-tools/src/build.php --chrome -f'
       . ' -k build-tools/chrome.pem'
-      . ' -o site/public/chrome/dev/cv-pls_' . $version . '.crx'
+      . ' -o site/public/chrome/dev/cv-pls_' . $chromeVersion . '.crx'
       . ' -m site/public/chrome/dev/update.xml'
-      . ' -v ' . $version
+      . ' -v ' . $chromeVersion
       . ' -d chrome-cv-pls/src'
-      . ' -u ' . $baseUrl . 'chrome/dev/cv-pls_' . $version . '.crx'
+      . ' -u ' . $baseUrl . 'chrome/dev/cv-pls_' . $chromeVersion . '.crx'
       . ' -p ' . $baseUrl . 'update/chrome?branch=' . $branch
     );
 
@@ -107,20 +107,53 @@
     $installRdf->load('ff-cv-pls/src/install.rdf');
     $installRdfXpath = new \DOMXpath($installRdf);
     $installRdfXpath->registerNamespace('em', 'http://www.mozilla.org/2004/em-rdf#');
-    $version = $installRdfXpath->query('//em:version')->item(0)->firstChild->data . '.' . $versionIncrement;
+    $mozillaVersion = $installRdfXpath->query('//em:version')->item(0)->firstChild->data . '.' . $versionIncrement;
 
     run(
         'php build-tools/src/build.php --mozilla -f'
       . ' -k build-tools/mozilla.pem'
-      . ' -o site/public/mozilla/dev/cv-pls_' . $version . '.xpi'
+      . ' -o site/public/mozilla/dev/cv-pls_' . $mozillaVersion . '.xpi'
       . ' -m site/public/mozilla/dev/update.rdf'
-      . ' -v ' . $version
+      . ' -v ' . $mozillaVersion
       . ' -d ff-cv-pls/src'
-      . ' -u ' . $baseUrl . 'mozilla/dev/cv-pls_' . $version . '.xpi'
+      . ' -u ' . $baseUrl . 'mozilla/dev/cv-pls_' . $mozillaVersion . '.xpi'
       . ' -p ' . $baseUrl . 'update/mozilla?branch=' . $branch
     );
     
     foreach ($existing as $file) {
       unlink($file);
     }
+  }
+
+  if (isset($mozillaVersion) || isset($chromeVersion)) {
+    require 'site/config.downloads.php';
+
+    $fileContent = "<?php
+    define('STABLE_VERSION', '".STABLE_VERSION."');";
+
+    if (defined('DEVELOPMENT_VERSION')) {
+      $fileContent .= "
+    define('DEVELOPMENT_VERSION', '".DEVELOPMENT_VERSION."');";
+    } else {
+      $fileContent .= "
+    //define('DEVELOPMENT_VERSION', '');";
+    }
+
+    if (isset($chromeVersion)) {
+      $fileContent .= "
+    define('CHROME_ALPHA_VERSION', '".$chromeVersion."');";
+    } else {
+      $fileContent .= "
+    //define('CHROME_ALPHA_VERSION', '');";
+    }
+
+    if (isset($mozillaVersion)) {
+      $fileContent .= "
+    define('MOZILLA_ALPHA_VERSION', '".$mozillaVersion."');";
+    } else {
+      $fileContent .= "
+    //define('MOZILLA_ALPHA_VERSION', '');";
+    }    
+
+    file_put_contents('site/config.downloads.php', $fileContent);
   }
