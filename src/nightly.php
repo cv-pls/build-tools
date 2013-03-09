@@ -37,12 +37,12 @@
   $basePath = 'site/public/chrome/dev';
 
   foreach (glob($basePath . '/cv-pls_*') as $file) {
-    if (preg_match('/^cv-pls_\d+\.\d+\.\d+\.(\d+)\.crx$/', basename($file), $matches)) {
-      if ($matches[1] > $versionIncrement) {
-        $versionIncrement = (int) $matches[1];
+    if (preg_match('/^cv-pls_(\d+\.\d+\.\d+\.(\d+))\.crx$/', basename($file), $matches)) {
+      if ($matches[2] > $versionIncrement) {
+        $versionIncrement = (int) $matches[2];
       }
 
-      $existing[(int) $matches[1]] = $file;
+      $existing[$matches[1]] = $file;
     }
   }
 
@@ -62,6 +62,14 @@
 
     foreach ($existing as $file) {
       unlink($file);
+    }
+  } else {
+    $chromeVersion = '0.0.0';
+
+    foreach ($existing as $version => $file) {
+      if (version_compare($version, $chromeVersion) > 0) {
+        $chromeVersion = $version;
+      }
     }
   }
 
@@ -123,37 +131,42 @@
     foreach ($existing as $file) {
       unlink($file);
     }
+  } else {
+    $mozillaVersion = '0.0.0';
+
+    foreach ($existing as $version => $file) {
+      if (version_compare($version, $mozillaVersion) > 0) {
+        $mozillaVersion = $version;
+      }
+    }
   }
 
   if (isset($mozillaVersion) || isset($chromeVersion)) {
-    require 'site/config.downloads.php';
-
-    $fileContent = "<?php
-    define('STABLE_VERSION', '".STABLE_VERSION."');";
-
-    if (defined('DEVELOPMENT_VERSION')) {
-      $fileContent .= "
-    define('DEVELOPMENT_VERSION', '".DEVELOPMENT_VERSION."');";
-    } else {
-      $fileContent .= "
-    //define('DEVELOPMENT_VERSION', '');";
+    $alphaConfigFile = 'site/config.alpha.php';
+    if (is_file($alphaConfigFile)) {
+      require $alphaConfigFile;
     }
 
+    $fileContent = "<?php\n";
+
     if (isset($chromeVersion)) {
-      $fileContent .= "
-    define('CHROME_ALPHA_VERSION', '".$chromeVersion."');";
+      $fileContent .= "\n    define('CHROME_ALPHA_VERSION', '".$chromeVersion."');";
+    } else if (defined('CHROME_ALPHA_VERSION')) {
+      $fileContent .= "\n    define('CHROME_ALPHA_VERSION', '".CHROME_ALPHA_VERSION."');";
     } else {
-      $fileContent .= "
-    //define('CHROME_ALPHA_VERSION', '');";
+      $fileContent .= "\n    //define('CHROME_ALPHA_VERSION', '');";
     }
 
     if (isset($mozillaVersion)) {
-      $fileContent .= "
-    define('MOZILLA_ALPHA_VERSION', '".$mozillaVersion."');";
+      $fileContent .= "\n    define('MOZILLA_ALPHA_VERSION', '".$mozillaVersion."');";
+    } else if (defined('MOZILLA_ALPHA_VERSION')) {
+      $fileContent .= "\n    define('MOZILLA_ALPHA_VERSION', '".MOZILLA_ALPHA_VERSION."');";
     } else {
-      $fileContent .= "
-    //define('MOZILLA_ALPHA_VERSION', '');";
+      $fileContent .= "\n    //define('MOZILLA_ALPHA_VERSION', '');";
     }    
 
-    file_put_contents('site/config.downloads.php', $fileContent);
+    $fileContent .= "\n";
+
+    file_put_contents($alphaConfigFile, $fileContent);
   }
+
