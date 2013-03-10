@@ -99,12 +99,12 @@
   $basePath = 'site/public/mozilla/dev';
 
   foreach (glob($basePath . '/cv-pls_*') as $file) {
-    if (preg_match('/^cv-pls_\d+\.\d+\.\d+\.(\d+)\.xpi$/', basename($file), $matches)) {
-      if ($matches[1] > $versionIncrement) {
-        $versionIncrement = (int) $matches[1];
+    if (preg_match('/^cv-pls_(\d+\.\d+\.\d+\.(\d+))\.xpi$/', basename($file), $matches)) {
+      if ($matches[2] > $versionIncrement) {
+        $versionIncrement = (int) $matches[2];
       }
 
-      $existing[(int) $matches[1]] = $file;
+      $existing[$matches[1]] = $file;
     }
   }
 
