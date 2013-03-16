@@ -42,8 +42,9 @@ Usage: php build-module.php /path/to/dir
 
     $classFiles = $jsLint = $globals = [];
 
+    $exclude = ['module.js', 'helpers.js', 'bootstrap.js', basename($baseDir) . '.js'];
     foreach (glob($baseDir . '/*.js') as $file) {
-        if (!in_array(basename($file), ['module.js', 'helpers.js', basename($baseDir) . '.js'])) {
+        if (!in_array(basename($file), $exclude)) {
             $classFiles[pathinfo($file, PATHINFO_FILENAME)] = $file;
         }
     }
@@ -65,14 +66,18 @@ Usage: php build-module.php /path/to/dir
     }
     fwrite($tempStream, "\n\n");
 
-    writeFile($tempStream, $moduleFile, $jsLint, $globals);
-
     if (is_file($baseDir . '/helpers.js')) {
         writeFile($tempStream, $baseDir . '/helpers.js', $jsLint, $globals);
     }
 
     foreach ($classFiles as $file) {
         writeFile($tempStream, $file, $jsLint, $globals);
+    }
+
+    writeFile($tempStream, $moduleFile, $jsLint, $globals);
+
+    if (is_file($baseDir . '/bootstrap.js')) {
+        writeFile($tempStream, $baseDir . '/bootstrap.js', $jsLint, $globals);
     }
 
     fwrite($tempStream, "}());\n");
@@ -91,8 +96,9 @@ Usage: php build-module.php /path/to/dir
         fwrite($outputFile, "/*jslint ".implode(', ', $jsLint)." */\n");
     }
 
+    $globals = array_diff(array_unique($globals), array_keys($classFiles));
     if ($globals) {
-        $globals = array_diff(array_keys($classFiles), array_unique($globals));
+        sort($globals);
         fwrite($outputFile, "/*global ".implode(', ', $globals)." */\n");
     }
 
